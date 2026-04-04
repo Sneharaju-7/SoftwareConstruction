@@ -1,98 +1,160 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+export default function DashboardScreen() {
+  const { width } = useWindowDimensions();
+  const router = useRouter();
 
-export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        
+        {/* Banner with Profile icon */}
+        <View style={styles.bannerRow}>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileButton}>
+            <Ionicons name="person-circle" size={48} color="#1E293B" />
+          </TouchableOpacity>
+        </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        <View style={styles.banner}>
+          <Text style={styles.heroTitle}>Good morning!</Text>
+          <Text style={styles.heroSubheadline}>Did you sleep well? Hope you are having a happy day.</Text>
+        </View>
+
+        {/* 2x2 Grid */}
+        <View style={styles.grid}>
+          {/* Alerts */}
+          <TouchableOpacity style={styles.gridButton} onPress={() => router.push('/alerts')}>
+            <Text style={styles.gridButtonText}>🔔  Alerts</Text>
+          </TouchableOpacity>
+          
+          {/* Daily check-in */}
+          <TouchableOpacity style={styles.gridButton} onPress={() => router.push('/checkin')}>
+            <Text style={styles.gridButtonText}>✅  Daily check-in</Text>
+          </TouchableOpacity>
+
+          {/* Games */}
+          <TouchableOpacity style={styles.gridButton} onPress={() => router.push('/games')}>
+            <Text style={styles.gridButtonText}>🎮  Games</Text>
+          </TouchableOpacity>
+
+          {/* Contacts */}
+          <TouchableOpacity style={styles.gridButton} onPress={() => router.push('/contacts')}>
+            <Text style={styles.gridButtonText}>📞  Contacts</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Action Buttons */}
+        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/feeling-low')}>
+          <Text style={styles.actionButtonText}>😔  I'm feeling low</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionButtonPrimary} onPress={() => router.push('/sos')}>
+          <Text style={styles.actionButtonPrimaryText}>🆘  SOS — I feel unwell</Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  stepContainer: {
-    gap: 8,
+  container: {
+    padding: 24,
+    alignItems: 'center',
+    paddingBottom: 40,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  bannerRow: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+  },
+  profileButton: {
+    padding: 8,
+  },
+  banner: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 40,
+    marginTop: 20,
+  },
+  heroTitle: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  heroSubheadline: {
+    fontSize: 24,
+    fontStyle: 'italic',
+    color: '#475569', 
+    textAlign: 'center',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  gridButton: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  gridButtonText: {
+    color: '#1E293B',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  actionButton: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  actionButtonText: {
+    color: '#475569',
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  actionButtonPrimary: {
+    width: '100%',
+    backgroundColor: '#1E293B',
+    borderRadius: 24,
+    paddingVertical: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  actionButtonPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700',
   },
 });
