@@ -10,7 +10,7 @@ export default function GamesScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
-        
+
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={28} color="#1E293B" />
@@ -22,7 +22,7 @@ export default function GamesScreen() {
 
         <View style={styles.grid}>
           {/* Word Jumble */}
-          <TouchableOpacity style={styles.gameCard} onPress={() => alert('Launching Word Jumble!')}>
+          <TouchableOpacity style={styles.gameCard} onPress={() => router.push('/games/word-jumble')}>
             <View style={[styles.iconWrapper, { backgroundColor: '#FDE68A' }]}>
               <Ionicons name="text" size={48} color="#D97706" />
             </View>
@@ -31,7 +31,7 @@ export default function GamesScreen() {
           </TouchableOpacity>
 
           {/* Memory Game */}
-          <TouchableOpacity style={styles.gameCard} onPress={() => alert('Launching Memory Game!')}>
+          <TouchableOpacity style={styles.gameCard} onPress={() => router.push('/games/memory-game')}>
             <View style={[styles.iconWrapper, { backgroundColor: '#A7F3D0' }]}>
               <Ionicons name="apps" size={48} color="#059669" />
             </View>
@@ -40,7 +40,7 @@ export default function GamesScreen() {
           </TouchableOpacity>
 
           {/* Fun Trivia */}
-          <TouchableOpacity style={styles.gameCard} onPress={() => alert('Launching Fun Trivia!')}>
+          <TouchableOpacity style={styles.gameCard} onPress={() => router.push('/games/trivia')}>
             <View style={[styles.iconWrapper, { backgroundColor: '#BFDBFE' }]}>
               <Ionicons name="help" size={48} color="#2563EB" />
             </View>
