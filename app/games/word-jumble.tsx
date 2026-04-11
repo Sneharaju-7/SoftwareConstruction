@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const WORDS = ['COMPANION', 'HEALTH', 'FAMILY', 'MEDICINE', 'MORNING', 'SUNSHINE', 'GARDEN', 'TREAT', 'RELAX', 'COMFORT'];
+type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+
+const WORDS_EASY = ['CAT', 'DOG', 'BIRD', 'TREE', 'SUN', 'MOON', 'FISH', 'WALK', 'FOOD', 'HOME', 'BOOK', 'SONG'];
+const WORDS_MEDIUM = ['FAMILY', 'HEALTH', 'MORNING', 'GARDEN', 'SPRING', 'TREAT', 'RELAX', 'COMFORT', 'FRIEND'];
+const WORDS_HARD = ['COMPANION', 'SUNSHINE', 'BEAUTIFUL', 'MEDICINE', 'HAPPINESS', 'ADVENTURE', 'WONDERFUL', 'BREAKFAST'];
 
 function shuffleWord(word: string) {
   const arr = word.split('');
@@ -17,13 +21,18 @@ function shuffleWord(word: string) {
 
 export default function WordJumbleScreen() {
   const router = useRouter();
+  const [difficulty, setDifficulty] = useState<Difficulty>('MEDIUM');
   const [currentWord, setCurrentWord] = useState('');
   const [jumbledWord, setJumbledWord] = useState('');
   const [guess, setGuess] = useState('');
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null });
 
-  const loadNewWord = () => {
-    const randomWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+  const loadNewWord = (selectedDifficulty = difficulty) => {
+    let pool = WORDS_MEDIUM;
+    if (selectedDifficulty === 'EASY') pool = WORDS_EASY;
+    if (selectedDifficulty === 'HARD') pool = WORDS_HARD;
+
+    const randomWord = pool[Math.floor(Math.random() * pool.length)];
     setCurrentWord(randomWord);
     
     // Ensure the jumbled word is not the same as the original
@@ -38,13 +47,18 @@ export default function WordJumbleScreen() {
   };
 
   useEffect(() => {
-    loadNewWord();
+    loadNewWord(difficulty);
   }, []);
+
+  const handleDifficultyChange = (newDifficulty: Difficulty) => {
+    setDifficulty(newDifficulty);
+    loadNewWord(newDifficulty);
+  };
 
   const handleGuess = () => {
     if (guess.toUpperCase().trim() === currentWord) {
       setFeedback({ message: 'Correct! Great job!', type: 'success' });
-      setTimeout(loadNewWord, 2000);
+      setTimeout(() => loadNewWord(difficulty), 2000);
     } else {
       setFeedback({ message: 'Not quite right. Try again!', type: 'error' });
     }
@@ -62,6 +76,20 @@ export default function WordJumbleScreen() {
 
         <Text style={styles.heroTitle}>Word Jumble</Text>
         <Text style={styles.heroSubheadline}>Unscramble the letters to find the word.</Text>
+
+        <View style={styles.difficultyContainer}>
+          {(['EASY', 'MEDIUM', 'HARD'] as Difficulty[]).map((level) => (
+            <TouchableOpacity
+              key={level}
+              style={[styles.difficultyButton, difficulty === level && styles.difficultyButtonActive]}
+              onPress={() => handleDifficultyChange(level)}
+            >
+              <Text style={[styles.difficultyText, difficulty === level && styles.difficultyTextActive]}>
+                {level}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <View style={styles.gameBoard}>
           <Text style={styles.jumbledText}>{jumbledWord}</Text>
@@ -86,7 +114,7 @@ export default function WordJumbleScreen() {
             <Text style={styles.submitButtonText}>Check My Guess</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.skipButton} onPress={loadNewWord}>
+          <TouchableOpacity style={styles.skipButton} onPress={() => loadNewWord(difficulty)}>
             <Text style={styles.skipButtonText}>Skip Word</Text>
           </TouchableOpacity>
         </View>
@@ -102,7 +130,12 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   backButton: { padding: 8 },
   heroTitle: { fontSize: 40, fontWeight: '900', color: '#1E293B', marginBottom: 8 },
-  heroSubheadline: { fontSize: 20, color: '#475569', marginBottom: 40 },
+  heroSubheadline: { fontSize: 20, color: '#475569', marginBottom: 20 },
+  difficultyContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  difficultyButton: { flex: 1, padding: 12, borderRadius: 12, backgroundColor: '#F1F5F9', marginHorizontal: 4, alignItems: 'center' },
+  difficultyButtonActive: { backgroundColor: '#1E293B' },
+  difficultyText: { fontSize: 16, fontWeight: '600', color: '#475569' },
+  difficultyTextActive: { color: '#FFFFFF' },
   gameBoard: {
     backgroundColor: '#F8FAFC',
     borderRadius: 24,
@@ -112,9 +145,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   jumbledText: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: '900',
-    letterSpacing: 10,
+    letterSpacing: 8,
     color: '#D97706',
     marginBottom: 40,
     textAlign: 'center',

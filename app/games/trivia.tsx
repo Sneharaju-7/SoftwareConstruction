@@ -1,57 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const QUESTIONS = [
-  {
-    question: "What is the capital of France?",
-    options: ["Berlin", "London", "Paris", "Madrid"],
-    answer: "Paris",
-  },
-  {
-    question: "Which planet is known as the Red Planet?",
-    options: ["Mars", "Venus", "Jupiter", "Saturn"],
-    answer: "Mars",
-  },
-  {
-    question: "Who wrote 'Romeo and Juliet'?",
-    options: ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"],
-    answer: "William Shakespeare",
-  },
-  {
-    question: "What is the largest ocean on Earth?",
-    options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
-    answer: "Pacific Ocean",
-  },
-  {
-    question: "What year did the Apollo 11 moon landing occur?",
-    options: ["1965", "1969", "1972", "1980"],
-    answer: "1969",
-  }
+const QUESTION_POOL = [
+  { question: "What is the capital of France?", options: ["Berlin", "London", "Paris", "Madrid"], answer: "Paris" },
+  { question: "Which planet is known as the Red Planet?", options: ["Mars", "Venus", "Jupiter", "Saturn"], answer: "Mars" },
+  { question: "Who wrote 'Romeo and Juliet'?", options: ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"], answer: "William Shakespeare" },
+  { question: "What is the largest ocean on Earth?", options: ["Atlantic", "Indian", "Arctic", "Pacific"], answer: "Pacific" },
+  { question: "What year did the Apollo 11 moon landing occur?", options: ["1965", "1969", "1972", "1980"], answer: "1969" },
+  { question: "What is the capital of Japan?", options: ["Seoul", "Beijing", "Tokyo", "Bangkok"], answer: "Tokyo" },
+  { question: "Which element has the chemical symbol 'O'?", options: ["Gold", "Oxygen", "Osmium", "Oganesson"], answer: "Oxygen" },
+  { question: "Who painted the Mona Lisa?", options: ["Vincent van Gogh", "Pablo Picasso", "Leonardo da Vinci", "Claude Monet"], answer: "Leonardo da Vinci" },
+  { question: "What is the largest mammal in the world?", options: ["Elephant", "Blue Whale", "Giraffe", "Hippopotamus"], answer: "Blue Whale" },
+  { question: "How many continents are there?", options: ["5", "6", "7", "8"], answer: "7" },
+  { question: "Which is the longest river in the world?", options: ["Amazon", "Nile", "Yangtze", "Mississippi"], answer: "Nile" },
+  { question: "What is the hardest natural substance on Earth?", options: ["Gold", "Iron", "Diamond", "Platinum"], answer: "Diamond" },
+  { question: "What is the tallest mountain in the world?", options: ["K2", "Kangchenjunga", "Mount Everest", "Lhotse"], answer: "Mount Everest" },
+  { question: "Who was the first President of the United States?", options: ["Thomas Jefferson", "Abraham Lincoln", "George Washington", "John Adams"], answer: "George Washington" },
+  { question: "What is the primary color of the Golden Gate Bridge?", options: ["Red", "Orange", "Yellow", "Gold"], answer: "Orange" },
+  { question: "Which gas do plants absorb from the atmosphere?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], answer: "Carbon Dioxide" },
+  { question: "What is the monetary unit of the United Kingdom?", options: ["Euro", "Pound Sterling", "Dollar", "Franc"], answer: "Pound Sterling" },
+  { question: "Which instrument has 88 keys?", options: ["Guitar", "Piano", "Violin", "Flute"], answer: "Piano" },
+  { question: "What are the primary colors?", options: ["Red, Blue, Yellow", "Orange, Green, Purple", "Red, White, Blue", "Black, White, Gray"], answer: "Red, Blue, Yellow" },
+  { question: "In what year did World War II end?", options: ["1941", "1943", "1945", "1947"], answer: "1945" }
 ];
+
+const QUESTIONS_PER_GAME = 5;
+
+// Helper to shuffle array
+function shuffleArray<T>(array: T[]): T[] {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+}
 
 export default function TriviaScreen() {
   const router = useRouter();
+  const [activeQuestions, setActiveQuestions] = useState<typeof QUESTION_POOL>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
 
-  const currentQuestion = QUESTIONS[currentQuestionIndex];
+  const initializeGame = () => {
+    // Randomly select 5 questions from the pool
+    const shuffledPool = shuffleArray(QUESTION_POOL);
+    const selected = shuffledPool.slice(0, QUESTIONS_PER_GAME);
+    
+    // Optionally, shuffle the options inside those questions too!
+    const randomizedOptions = selected.map(q => ({
+      ...q,
+      options: shuffleArray(q.options)
+    }));
+
+    setActiveQuestions(randomizedOptions);
+    setCurrentQuestionIndex(0);
+    setSelectedOption(null);
+    setScore(0);
+    setIsGameOver(false);
+  };
+
+  useEffect(() => {
+    initializeGame();
+  }, []);
 
   const handleOptionSelect = (option: string) => {
     if (selectedOption !== null) return; // Prevent multiple clicks
     setSelectedOption(option);
 
-    if (option === currentQuestion.answer) {
+    if (option === activeQuestions[currentQuestionIndex].answer) {
       setScore((prev) => prev + 1);
     }
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < QUESTIONS.length - 1) {
+    if (currentQuestionIndex < activeQuestions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedOption(null);
     } else {
@@ -59,12 +87,9 @@ export default function TriviaScreen() {
     }
   };
 
-  const restartGame = () => {
-    setCurrentQuestionIndex(0);
-    setSelectedOption(null);
-    setScore(0);
-    setIsGameOver(false);
-  };
+  if (activeQuestions.length === 0) return null; // Avoid render before init
+
+  const currentQuestion = activeQuestions[currentQuestionIndex];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -84,9 +109,9 @@ export default function TriviaScreen() {
             <View style={styles.scoreContainer}>
               <Text style={styles.scoreTitle}>Game Over!</Text>
               <Text style={styles.scoreText}>
-                You scored {score} out of {QUESTIONS.length}!
+                You scored {score} out of {QUESTIONS_PER_GAME}!
               </Text>
-              <TouchableOpacity style={styles.nextButton} onPress={restartGame}>
+              <TouchableOpacity style={styles.nextButton} onPress={initializeGame}>
                 <Text style={styles.nextButtonText}>Play Again</Text>
               </TouchableOpacity>
             </View>
@@ -94,7 +119,7 @@ export default function TriviaScreen() {
             <>
               <View style={styles.progressContainer}>
                 <Text style={styles.progressText}>
-                  Question {currentQuestionIndex + 1} of {QUESTIONS.length}
+                  Question {currentQuestionIndex + 1} of {QUESTIONS_PER_GAME}
                 </Text>
                 <Text style={styles.scoreIndicator}>Score: {score}</Text>
               </View>
@@ -133,7 +158,7 @@ export default function TriviaScreen() {
               {selectedOption !== null && (
                 <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
                   <Text style={styles.nextButtonText}>
-                    {currentQuestionIndex < QUESTIONS.length - 1 ? 'Next Question' : 'See Results'}
+                    {currentQuestionIndex < activeQuestions.length - 1 ? 'Next Question' : 'See Results'}
                   </Text>
                 </TouchableOpacity>
               )}

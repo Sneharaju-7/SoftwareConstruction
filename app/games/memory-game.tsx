@@ -4,7 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const EMOJIS = ['🐶', '🍎', '🚗', '🌻', '🎸', '⚽', '🚀', '⭐'];
+const EMOJI_POOL = [
+  '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🦆',
+  '🍎', '🍏', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦',
+  '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '🚜', '🛴', '🚲', '🛵', '🏍️', '🚨', '🚔', '🚍',
+  '🎸', '🎹', '🎺', '🎻', '🥁', '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍'
+];
 
 interface CardData {
   id: number;
@@ -21,7 +26,11 @@ export default function MemoryGameScreen() {
   const [matches, setMatches] = useState(0);
 
   const initializeGame = () => {
-    const shuffledCards = [...EMOJIS, ...EMOJIS]
+    // Randomly pick 8 unique emojis from the large pool
+    const shuffledPool = [...EMOJI_POOL].sort(() => Math.random() - 0.5);
+    const selectedEmojis = shuffledPool.slice(0, 8);
+
+    const shuffledCards = [...selectedEmojis, ...selectedEmojis]
       .sort(() => Math.random() - 0.5)
       .map((emoji, index) => ({
         id: index,
@@ -29,6 +38,7 @@ export default function MemoryGameScreen() {
         isFlipped: false,
         isMatched: false,
       }));
+    
     setCards(shuffledCards);
     setFlippedIndices([]);
     setMatches(0);
@@ -86,13 +96,17 @@ export default function MemoryGameScreen() {
         <Text style={styles.heroSubheadline}>Find all the matching pairs!</Text>
 
         <View style={styles.gameBoard}>
-          {matches === 8 && (
+          {matches === 8 ? (
             <View style={styles.winContainer}>
               <Text style={styles.winText}>🎉 You Won! 🎉</Text>
               <TouchableOpacity style={styles.restartButton} onPress={initializeGame}>
                 <Text style={styles.restartButtonText}>Play Again</Text>
               </TouchableOpacity>
             </View>
+          ) : (
+            <TouchableOpacity style={styles.reshuffleButton} onPress={initializeGame}>
+               <Text style={styles.reshuffleButtonText}>Reshuffle Board</Text>
+            </TouchableOpacity>
           )}
 
           <View style={styles.grid}>
@@ -124,10 +138,21 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   backButton: { padding: 8 },
   heroTitle: { fontSize: 40, fontWeight: '900', color: '#1E293B', marginBottom: 8 },
-  heroSubheadline: { fontSize: 20, color: '#475569', marginBottom: 30 },
+  heroSubheadline: { fontSize: 20, color: '#475569', marginBottom: 20 },
   gameBoard: {
     alignItems: 'center',
     width: '100%',
+  },
+  reshuffleButton: {
+    padding: 10,
+    marginBottom: 20,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 12,
+  },
+  reshuffleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#334155'
   },
   winContainer: {
     backgroundColor: '#DBEAFE',
