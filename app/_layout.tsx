@@ -1,14 +1,14 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+<<<<<<< HEAD
 import { useColorScheme } from 'react-native';
+=======
+>>>>>>> d742ba1 (Merge AI Companion into Daily Check-in with dynamic choices)
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signup" options={{ headerShown: false }} />
@@ -24,8 +24,9 @@ export default function RootLayout() {
         <Stack.Screen name="feeling-low" options={{ title: "I'm Feeling Low" }} />
         <Stack.Screen name="sos" options={{ title: 'SOS Dashboard' }} />
         <Stack.Screen name="games/index" options={{ title: 'Games Hub' }} />
+        <Stack.Screen name="groq-chat" options={{ title: 'AI Companion' }} />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
+    </>
   );
 }

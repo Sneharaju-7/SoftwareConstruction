@@ -46,6 +46,8 @@ export default function DashboardScreen() {
           <TouchableOpacity style={styles.gridButton} onPress={() => router.push('/contacts')}>
             <Text style={styles.gridButtonText}>📞  Contacts</Text>
           </TouchableOpacity>
+
+
         </View>
 
         {/* Action Buttons */}
