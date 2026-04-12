@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getAlerts, saveAlerts, AlertData } from '../utils/storage';
+import { scheduleRealSMS } from '../utils/smsScheduler';
 
 export default function AlertsScreen() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function AlertsScreen() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('Medicine');
   const [time, setTime] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -24,17 +26,20 @@ export default function AlertsScreen() {
     }
     setError('');
     
-    const newAlert: AlertData = { id: Date.now().toString(), title, type, time };
+    const newAlert: AlertData = { id: Date.now().toString(), title, type, time, phoneNumber };
     const updated = [...alerts, newAlert];
     setAlerts(updated);
     await saveAlerts(updated);
     
     setTitle('');
     setTime('');
+    setPhoneNumber('');
     
-    // Note: Local Push Notification mock logic would be scheduled here.
-    // E.g., Notifications.scheduleNotificationAsync({ content: { title: 'Alert!', body: title }, trigger: { seconds: 3600 } })
-    console.log('Scheduled alert for every 1-2 hours:', newAlert);
+    if (phoneNumber) {
+      scheduleRealSMS(phoneNumber, title, time);
+    }
+    
+    console.log('Scheduled alert:', newAlert);
   };
 
   const handleDelete = async (id: string) => {
@@ -68,6 +73,7 @@ export default function AlertsScreen() {
 
           <TextInput style={styles.input} placeholder="Title (e.g. Blood Pressure Pill)" placeholderTextColor="#94A3B8" value={title} onChangeText={setTitle} />
           <TextInput style={styles.input} placeholder="Time (e.g. 10:00 AM)" placeholderTextColor="#94A3B8" value={time} onChangeText={setTime} />
+          <TextInput style={styles.input} placeholder="Phone Number for SMS Alert (Optional)" placeholderTextColor="#94A3B8" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
           
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -88,6 +94,7 @@ export default function AlertsScreen() {
                 <View style={styles.alertMeta}>
                   <Text style={styles.alertTitle}>{alert.title}</Text>
                   <Text style={styles.alertTime}>{alert.time}</Text>
+                  {alert.phoneNumber ? <Text style={styles.alertPhone}>SMS to: {alert.phoneNumber}</Text> : null}
                 </View>
                 <TouchableOpacity onPress={() => handleDelete(alert.id)}>
                   <Ionicons name="close-circle" size={32} color="#EF4444" />
@@ -127,4 +134,5 @@ const styles = StyleSheet.create({
   alertMeta: { flex: 1 },
   alertTitle: { fontSize: 20, fontWeight: '700', color: '#1E3A8A' },
   alertTime: { fontSize: 16, color: '#2563EB', marginTop: 4 },
+  alertPhone: { fontSize: 14, color: '#3B82F6', marginTop: 2, fontStyle: 'italic' },
 });

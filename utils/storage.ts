@@ -12,6 +12,7 @@ export interface AlertData {
   title: string;
   type: string;
   time: string;
+  phoneNumber?: string;
 }
 
 export const getContacts = async (): Promise<Contact[]> => {
