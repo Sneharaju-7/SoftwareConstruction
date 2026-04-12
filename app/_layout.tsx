@@ -1,10 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-<<<<<<< HEAD
 import { useColorScheme } from 'react-native';
-=======
->>>>>>> d742ba1 (Merge AI Companion into Daily Check-in with dynamic choices)
 
 export default function RootLayout() {
   return (
