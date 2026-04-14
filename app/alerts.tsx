@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getAlerts, saveAlerts, AlertData } from '../utils/storage';
+import { getAlerts, saveAlerts, AlertData, getUserProfile } from '../utils/storage';
 
 export default function AlertsScreen() {
   const router = useRouter();
@@ -28,6 +28,15 @@ export default function AlertsScreen() {
     const updated = [...alerts, newAlert];
     setAlerts(updated);
     await saveAlerts(updated);
+    
+    const profile = await getUserProfile();
+    if (profile && profile.phone) {
+      const message = `Reminder created: ${title} at ${time} for ${type}`;
+      const url = Platform.OS === 'ios'
+        ? `sms:${profile.phone}&body=${encodeURIComponent(message)}`
+        : `sms:${profile.phone}?body=${encodeURIComponent(message)}`;
+      Linking.openURL(url).catch(err => console.log('Error opening SMS', err));
+    }
     
     setTitle('');
     setTime('');
