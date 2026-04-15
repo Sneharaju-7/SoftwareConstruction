@@ -12,8 +12,8 @@ interface Message {
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const INITIAL_OPTIONS = [
-  { label: "I'm physically hurt.", icon: "🤕" },
-  { label: "I want to talk.", icon: "💬" },
+  { label: "I want to chat.", icon: "☕" },
+  { label: "My body aches.", icon: "🩺" },
   { label: "I need to rest.", icon: "🛌" },
 ];
 
@@ -28,30 +28,30 @@ export default function CheckinScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const emojis = [
-    { label: 'Happy', icon: '😄', initReply: "That's wonderful! What made you happy today? How is your physical health holding up?" },
-    { label: 'Okay', icon: '🙂', initReply: "Glad to hear you are doing okay! Do you have any physical aches or tiredness?" },
-    { label: 'Neutral', icon: '😐', initReply: "I see. Something on your mind? How was your sleep?" },
-    { label: 'Sad', icon: '😢', initReply: "I'm sorry you are feeling sad. Mental health is just as important as physical health. Want to talk about it?" },
-    { label: 'Angry', icon: '😡', initReply: "It's completely normal to feel upset. Has something happened? Be sure to take deep breaths." },
+    { label: 'Great', icon: '😄', initReply: "That's wonderful! What made you feel great today?" },
+    { label: 'Okay', icon: '🙂', initReply: "Glad to hear you are doing okay! Do you want to chat or do you need to rest?" },
+    { label: 'Tired', icon: '🥱', initReply: "I see. Didn't sleep well? Or just feeling a little worn out?" },
+    { label: 'Sad', icon: '😢', initReply: "I'm sorry you are feeling sad. I'm here for you. Want to talk about it?" },
+    { label: 'Pain', icon: '🤕', initReply: "I'm sorry you are in pain. Is it a specific ache? Remember to take it easy." },
   ];
 
   const handleEmojiSelect = (emoji: typeof emojis[0]) => {
     setFeelingSelected(true);
     setCurrentOptions(INITIAL_OPTIONS);
     setMessages([
-      { role: 'system', content: `You are GreyGo, a compassionate health and AI companion for older adults. You use simple language, are very encouraging, and listen carefully. Keep responses short (under 3 sentences), supportive, and directly address physical aches, sleep, and emotional moods.
+      { role: 'system', content: `You are GreyGo, a warm, patient, and deeply empathetic AI companion designed for older adults. You speak clearly and avoid complex words. Keep responses very short (1-2 sentences) and highly supportive. Offer comfort for pain, praise for good moods, and gentle active listening.
 
 You must ALWAYS respond in valid JSON format with exactly two properties:
 1. "reply": A string containing your spoken response to the user.
-2. "options": An array of exactly 3 or 4 suggested follow-up options for the user. Each option should be an object with "label" (string) and "icon" (a single emoji string).
+2. "options": An array of exactly 3 suggested follow-up options for the user. Each option should be an object with "label" (a very easy-to-read, short string) and "icon" (a single VERY basic emoji like 👍, ☕, ❤️, 😴, 💊, 😥).
 
-Example response:
+Example:
 {
   "reply": "I'm glad you're feeling okay today. Did you sleep well last night?",
   "options": [
-    { "label": "Yes, I slept great!", "icon": "😴" },
-    { "label": "Not really, waking up a lot.", "icon": "🥱" },
-    { "label": "I want to talk about something else.", "icon": "💬" }
+    { "label": "Yes, I slept great!", "icon": "👍" },
+    { "label": "Woke up a lot.", "icon": "🥱" },
+    { "label": "Let's talk about something else.", "icon": "☕" }
   ]
 }` },
       { role: 'user', content: emoji.icon },
@@ -228,8 +228,8 @@ const styles = StyleSheet.create({
   selectionView: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16 },
   emojiCard: { alignItems: 'center', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 24, borderWidth: 1, borderColor: '#E2E8F0', width: 120, height: 120, justifyContent: 'center' },
-  emojiIcon: { fontSize: 48, marginBottom: 8 },
-  emojiLabel: { fontSize: 16, fontWeight: '700', color: '#475569' },
+  emojiIcon: { fontSize: 56, marginBottom: 8 },
+  emojiLabel: { fontSize: 18, fontWeight: '700', color: '#475569' },
   chatView: { flex: 1, backgroundColor: '#F8FAFC' },
   messagesContainer: { flex: 1 },
   messageBubble: { maxWidth: '80%', padding: 16, borderRadius: 20, marginBottom: 12 },
@@ -242,12 +242,12 @@ const styles = StyleSheet.create({
   loadingText: { marginLeft: 8, color: '#64748B', fontSize: 14, fontStyle: 'italic' },
   
   optionsWrapper: { padding: 16, borderTopWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
-  optionsPrompt: { fontSize: 16, fontWeight: '600', color: '#475569', marginBottom: 12, textAlign: 'center' },
+  optionsPrompt: { fontSize: 18, fontWeight: '600', color: '#475569', marginBottom: 12, textAlign: 'center' },
   optionsList: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
-  presetButton: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  presetButtonText: { fontSize: 16, color: '#334155', fontWeight: '500' },
+  presetButton: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 20, paddingVertical: 14, paddingHorizontal: 20, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+  presetButtonText: { fontSize: 18, color: '#334155', fontWeight: '500' },
   customOptionButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', borderColor: '#94A3B8' },
-  customOptionButtonText: { fontSize: 16, color: '#1E293B', fontWeight: '600' },
+  customOptionButtonText: { fontSize: 18, color: '#1E293B', fontWeight: '600' },
   
   inputArea: { flexDirection: 'row', padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
   closeInputBtn: { marginRight: 8 },

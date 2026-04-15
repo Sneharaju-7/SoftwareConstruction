@@ -21,7 +21,6 @@ export default function RootLayout() {
         <Stack.Screen name="feeling-low" options={{ title: "I'm Feeling Low" }} />
         <Stack.Screen name="sos" options={{ title: 'SOS Dashboard' }} />
         <Stack.Screen name="games/index" options={{ title: 'Games Hub' }} />
-        <Stack.Screen name="groq-chat" options={{ title: 'AI Companion' }} />
       </Stack>
       <StatusBar style="auto" />
     </>
