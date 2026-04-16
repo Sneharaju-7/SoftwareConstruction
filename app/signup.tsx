@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, ScrollView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -15,6 +16,20 @@ export default function SignUpScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
+    }
+  };
   
   // App State
   const [errorMessage, setErrorMessage] = useState('');
@@ -23,8 +38,8 @@ export default function SignUpScreen() {
   const isWeb = Platform.OS === 'web';
 
   const handleSendOTP = () => {
-    if (!name || !phone) {
-      setErrorMessage('Please enter your name and phone number.');
+    if (!name || !phone || !profileImage) {
+      setErrorMessage('Please enter your name, phone, and upload a profile picture.');
       return;
     }
     setErrorMessage('');
@@ -89,11 +104,15 @@ export default function SignUpScreen() {
               <Text style={styles.infoText}>Let's set up your profile.</Text>
 
               {/* Photo Upload Placeholder */}
-              <TouchableOpacity style={styles.photoUploadContainer}>
-                <View style={styles.photoUploadCircle}>
-                  <Ionicons name="camera" size={48} color="#94A3B8" />
+              <TouchableOpacity style={styles.photoUploadContainer} onPress={pickImage}>
+                <View style={[styles.photoUploadCircle, profileImage ? styles.photoUploadCircleWithImage : null]}>
+                  {profileImage ? (
+                    <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                  ) : (
+                    <Ionicons name="camera" size={48} color="#94A3B8" />
+                  )}
                 </View>
-                <Text style={styles.photoUploadText}>Tap to add photo</Text>
+                <Text style={styles.photoUploadText}>{profileImage ? 'Change photo' : 'Tap to add photo'}</Text>
               </TouchableOpacity>
 
               {/* Input Fields */}
@@ -213,6 +232,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E2E8F0',
     borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  photoUploadCircleWithImage: {
+    borderStyle: 'solid',
+    borderColor: '#1E293B',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
   },
   photoUploadText: {
     fontSize: 18,
