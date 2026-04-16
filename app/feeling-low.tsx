@@ -74,6 +74,11 @@ export default function FeelingLowScreen() {
         <Text style={styles.contactsHeader}>Reach out to a loved one:</Text>
         <Text style={styles.contactsSub}>A short conversation can make a big difference.</Text>
 
+        <TouchableOpacity style={styles.manualDialButton} onPress={() => router.push('/dial')}>
+          <Ionicons name="keypad" size={20} color="#3B82F6" />
+          <Text style={styles.manualDialText}>Manual Dial</Text>
+        </TouchableOpacity>
+
         <View style={styles.contactsGrid}>
           {contacts.length === 0 ? (
             <Text style={styles.emptyText}>You haven't added any emergency contacts yet. Please go to the Contacts tab to add them.</Text>
@@ -84,6 +89,9 @@ export default function FeelingLowScreen() {
                 <View style={styles.contactMeta}>
                   <Text style={styles.contactName}>{c.name}</Text>
                   <Text style={styles.contactRelation}>{c.relation}</Text>
+                  <Text style={styles.contactPhone} onPress={() => handleCall(c.phone)}>
+                    {c.phone}
+                  </Text>
                 </View>
               </TouchableOpacity>
             ))
@@ -116,5 +124,8 @@ const styles = StyleSheet.create({
   contactMeta: { marginLeft: 16 },
   contactName: { fontSize: 20, fontWeight: '700', color: '#1E293B' },
   contactRelation: { fontSize: 16, color: '#475569' },
+  contactPhone: { fontSize: 16, color: '#2563EB', marginTop: 6, fontWeight: '600' },
   emptyText: { fontSize: 18, color: '#94A3B8', textAlign: 'center', padding: 20 },
+  manualDialButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'center', backgroundColor: '#3B82F6', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, marginBottom: 20 },
+  manualDialText: { color: '#FFF', fontSize: 16, fontWeight: '600', marginLeft: 8 },
 });
