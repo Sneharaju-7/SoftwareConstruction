@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, ScrollView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -15,12 +16,26 @@ export default function SignUpScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [photoUri, setPhotoUri] = useState('');
   
   // App State
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const isWeb = Platform.OS === 'web';
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setPhotoUri(result.assets[0].uri);
+    }
+  };
 
   const handleSendOTP = () => {
     if (!name || !phone) {
@@ -89,11 +104,17 @@ export default function SignUpScreen() {
               <Text style={styles.infoText}>Let's set up your profile.</Text>
 
               {/* Photo Upload Placeholder */}
-              <TouchableOpacity style={styles.photoUploadContainer}>
-                <View style={styles.photoUploadCircle}>
-                  <Ionicons name="camera" size={48} color="#94A3B8" />
-                </View>
-                <Text style={styles.photoUploadText}>Tap to add photo</Text>
+              <TouchableOpacity style={styles.photoUploadContainer} onPress={pickImage}>
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+                ) : (
+                  <>
+                    <View style={styles.photoUploadCircle}>
+                      <Ionicons name="camera" size={48} color="#94A3B8" />
+                    </View>
+                    <Text style={styles.photoUploadText}>Tap to add photo</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               {/* Input Fields */}
@@ -213,6 +234,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E2E8F0',
     borderStyle: 'dashed',
+  },
+  avatarImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 12,
   },
   photoUploadText: {
     fontSize: 18,

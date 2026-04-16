@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +14,32 @@ export default function FeelingLowScreen() {
     getContacts().then(setContacts);
   }, []);
 
-  const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone}`);
+  const handleCall = async (phone: string) => {
+    const cleanedNumber = phone.replace(/[^0-9+]/g, '');
+
+    if (!cleanedNumber) {
+      Alert.alert('Invalid Number', 'Please update this contact with a valid phone number.');
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      try {
+        await Linking.openURL(`tel:${cleanedNumber}`);
+      } catch {
+        Alert.alert('Cannot Open Dialer', 'This browser could not open a dialing app.');
+      }
+      return;
+    }
+
+    const dialUrl = `tel:${cleanedNumber}`;
+    const canDial = await Linking.canOpenURL(dialUrl);
+
+    if (!canDial) {
+      Alert.alert('Cannot Place Call', 'This device cannot open the phone dialer.');
+      return;
+    }
+
+    await Linking.openURL(dialUrl);
   };
 
   return (

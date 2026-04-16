@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +45,33 @@ export default function ContactsScreen() {
     await saveContacts(updated);
   };
 
+  const handleCall = async (phoneNumber: string) => {
+    const cleanedNumber = phoneNumber.replace(/[^0-9+]/g, '');
+    const callUrl = `tel:${cleanedNumber}`;
+
+    if (!cleanedNumber) {
+      Alert.alert('Invalid Number', 'Please update this contact with a valid phone number.');
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      try {
+        await Linking.openURL(callUrl);
+      } catch {
+        Alert.alert('Cannot Open Dialer', 'This browser could not open a dialing app.');
+      }
+      return;
+    }
+
+    const supported = await Linking.canOpenURL(callUrl);
+    if (!supported) {
+      Alert.alert('Cannot Place Call', 'Calling is not supported on this device.');
+      return;
+    }
+
+    await Linking.openURL(callUrl);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -81,9 +108,14 @@ export default function ContactsScreen() {
                   <Text style={styles.contactName}>{contact.name} <Text style={styles.contactRelation}>({contact.relation})</Text></Text>
                   <Text style={styles.contactPhone}>{contact.phone}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDelete(contact.id)}>
-                  <Ionicons name="trash-outline" size={28} color="#EF4444" />
-                </TouchableOpacity>
+                <View style={styles.contactActions}>
+                  <TouchableOpacity style={styles.callButton} onPress={() => handleCall(contact.phone)}>
+                    <Ionicons name="call-outline" size={22} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(contact.id)}>
+                    <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))
           )}
@@ -111,4 +143,22 @@ const styles = StyleSheet.create({
   contactName: { fontSize: 20, fontWeight: '700', color: '#1E293B' },
   contactRelation: { fontSize: 18, fontWeight: 'normal', color: '#64748B' },
   contactPhone: { fontSize: 18, color: '#475569', marginTop: 4 },
+  contactActions: { flexDirection: 'row', alignItems: 'center' },
+  callButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  deleteButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
