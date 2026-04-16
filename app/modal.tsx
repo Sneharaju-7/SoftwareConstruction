@@ -1,5 +1,9 @@
 import { Link } from 'expo-router';
+<<<<<<< HEAD
 import { StyleSheet, Text, View } from 'react-native';
+=======
+import { StyleSheet, View, Text } from 'react-native';
+>>>>>>> 9a9460bb2dc20ae3f4165766183cbdefcded6dc8
 
 export default function ModalScreen() {
   return (
@@ -25,13 +29,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E293B',
   },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
   link: {
     marginTop: 15,
     paddingVertical: 15,
   },
   linkText: {
+<<<<<<< HEAD
     color: '#2563EB',
     fontSize: 16,
     fontWeight: '600',
+=======
+    fontSize: 14,
+    color: '#2e78b7',
+>>>>>>> 9a9460bb2dc20ae3f4165766183cbdefcded6dc8
   },
 });

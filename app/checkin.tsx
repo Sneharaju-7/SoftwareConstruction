@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+const INITIAL_OPTIONS = [
+  { label: "I'm physically hurt.", icon: "🤕" },
+  { label: "I want to talk.", icon: "💬" },
+  { label: "I need to rest.", icon: "🛌" },
+];
 
 export default function CheckinScreen() {
   const router = useRouter();
@@ -15,69 +23,100 @@ export default function CheckinScreen() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [feelingSelected, setFeelingSelected] = useState(false);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [currentOptions, setCurrentOptions] = useState<{label: string, icon: string}[]>([]);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const emojis = [
-    { label: 'Happy', icon: '😄', initReply: "That's wonderful! What made you happy today?" },
-    { label: 'Okay', icon: '🙂', initReply: "Glad to hear you are doing okay! Did anything interesting happen?" },
-    { label: 'Neutral', icon: '😐', initReply: "I see. Something on your mind?" },
-    { label: 'Sad', icon: '😢', initReply: "I'm sorry you are feeling sad. Would you like to talk about it?" },
-    { label: 'Angry', icon: '😡', initReply: "It's completely normal to feel upset. Has something happened?" },
+    { label: 'Happy', icon: '😄', initReply: "That's wonderful! What made you happy today? How is your physical health holding up?" },
+    { label: 'Okay', icon: '🙂', initReply: "Glad to hear you are doing okay! Do you have any physical aches or tiredness?" },
+    { label: 'Neutral', icon: '😐', initReply: "I see. Something on your mind? How was your sleep?" },
+    { label: 'Sad', icon: '😢', initReply: "I'm sorry you are feeling sad. Mental health is just as important as physical health. Want to talk about it?" },
+    { label: 'Angry', icon: '😡', initReply: "It's completely normal to feel upset. Has something happened? Be sure to take deep breaths." },
   ];
 
   const handleEmojiSelect = (emoji: typeof emojis[0]) => {
     setFeelingSelected(true);
+    setCurrentOptions(INITIAL_OPTIONS);
     setMessages([
+      { role: 'system', content: `You are GreyGo, a compassionate health and AI companion for older adults. You use simple language, are very encouraging, and listen carefully. Keep responses short (under 3 sentences), supportive, and directly address physical aches, sleep, and emotional moods.
+
+You must ALWAYS respond in valid JSON format with exactly two properties:
+1. "reply": A string containing your spoken response to the user.
+2. "options": An array of exactly 3 or 4 suggested follow-up options for the user. Each option should be an object with "label" (string) and "icon" (a single emoji string).
+
+Example response:
+{
+  "reply": "I'm glad you're feeling okay today. Did you sleep well last night?",
+  "options": [
+    { "label": "Yes, I slept great!", "icon": "😴" },
+    { "label": "Not really, waking up a lot.", "icon": "🥱" },
+    { "label": "I want to talk about something else.", "icon": "💬" }
+  ]
+}` },
       { role: 'user', content: emoji.icon },
       { role: 'assistant', content: emoji.initReply }
     ]);
   };
 
-  const handleSend = async () => {
-    if (!inputText.trim()) return;
+  const handleSend = async (overrideText?: string) => {
+    const textToSend = overrideText || inputText.trim();
+    if (!textToSend) return;
     
-    const newMsg: Message = { role: 'user', content: inputText };
+    const newMsg: Message = { role: 'user', content: textToSend };
     const updatedMessages = [...messages, newMsg];
     setMessages(updatedMessages);
     setInputText('');
+    setShowTextInput(false);
     setLoading(true);
 
     try {
-      // Connect to Grok /xAI API
-      const apiKey = process.env.EXPO_PUBLIC_GROK_API_KEY || 'PLACEHOLDER';
+      const apiKey = process.env.EXPO_PUBLIC_GROQ_API_KEY;
       
-      if (apiKey === 'PLACEHOLDER') {
-          // Fallback mockup
-          setTimeout(() => {
-              setMessages([...updatedMessages, { role: 'assistant', content: "That's very interesting. Tell me more about it!" }]);
-              setLoading(false);
-          }, 1000);
-          return;
+      if (!apiKey) {
+        setMessages([...updatedMessages, { role: 'assistant', content: "Error: EXPO_PUBLIC_GROQ_API_KEY is missing from your .env file." }]);
+        setLoading(false);
+        return;
       }
 
-      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      const response = await fetch(GROQ_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          messages: [
-            { role: 'system', content: 'You are a warm, kind, and patient elderly companion chat bot. Keep your responses short, supportive, and engaging.' },
-            ...updatedMessages
-          ],
-          model: 'grok-beta',
+          messages: updatedMessages,
+          model: 'llama-3.1-8b-instant',
+          response_format: { type: "json_object" },
           stream: false,
           temperature: 0.7,
         }),
       });
 
       const data = await response.json();
-      const reply = data.choices[0].message.content;
-      setMessages([...updatedMessages, { role: 'assistant', content: reply }]);
       
-    } catch (e) {
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'API request failed');
+      }
+
+      const assistantMessageRaw = data.choices[0].message.content;
+      let replyText = "";
+      try {
+        const parsed = JSON.parse(assistantMessageRaw);
+        replyText = parsed.reply || "I'm here for you.";
+        if (parsed.options && Array.isArray(parsed.options)) {
+          setCurrentOptions(parsed.options);
+        }
+      } catch(e) {
+         replyText = assistantMessageRaw;
+      }
+      
+      setMessages((prev) => [...prev, { role: 'assistant', content: replyText }]);
+      
+    } catch (e: any) {
       console.error(e);
-      setMessages([...updatedMessages, { role: 'assistant', content: "I'm having trouble connecting right now, but I am still here tracking your check-in." }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: `Sorry, I'm having trouble connecting right now. (${e.message})` }]);
     } finally {
       setLoading(false);
     }
@@ -109,8 +148,13 @@ export default function CheckinScreen() {
           </View>
         ) : (
           <View style={styles.chatView}>
-            <ScrollView style={styles.messagesContainer} contentContainerStyle={{ padding: 16 }}>
-              {messages.map((msg, idx) => (
+            <ScrollView 
+              style={styles.messagesContainer} 
+              contentContainerStyle={{ padding: 16 }}
+              ref={scrollViewRef}
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            >
+              {messages.filter(m => m.role !== 'system').map((msg, idx) => (
                 <View key={idx} style={[styles.messageBubble, msg.role === 'user' ? styles.userBubble : styles.botBubble]}>
                   <Text style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.botText]}>
                     {msg.content}
@@ -118,18 +162,56 @@ export default function CheckinScreen() {
                 </View>
               ))}
               {loading && (
-                <View style={[styles.messageBubble, styles.botBubble]}>
-                  <Text style={styles.botText}>Typing...</Text>
+                <View style={styles.loadingContainer}>
+                   <ActivityIndicator size="small" color="#475569" />
+                   <Text style={styles.loadingText}>Analyzing health info...</Text>
                 </View>
               )}
             </ScrollView>
 
-            <View style={styles.inputArea}>
-              <TextInput style={styles.input} placeholder="Type a message..." placeholderTextColor="#94A3B8" value={inputText} onChangeText={setInputText} />
-              <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={loading}>
-                <Ionicons name="send" size={24} color="#FFF" />
-              </TouchableOpacity>
-            </View>
+            {!loading && !showTextInput && (
+               <View style={styles.optionsWrapper}>
+                 <Text style={styles.optionsPrompt}>Select an option below to reply:</Text>
+                 <View style={styles.optionsList}>
+                   {currentOptions.map((opt, index) => (
+                     <TouchableOpacity 
+                       key={index} 
+                       style={styles.presetButton} 
+                       onPress={() => handleSend(opt.label)}
+                     >
+                       <Text style={styles.presetButtonText}>{opt.icon}  {opt.label}</Text>
+                     </TouchableOpacity>
+                   ))}
+                   <TouchableOpacity 
+                     style={[styles.presetButton, styles.customOptionButton]} 
+                     onPress={() => setShowTextInput(true)}
+                   >
+                     <Text style={styles.customOptionButtonText}>Something else...</Text>
+                     <Ionicons name="pencil" size={18} color="#1E293B" style={{ marginLeft: 6 }} />
+                   </TouchableOpacity>
+                 </View>
+               </View>
+            )}
+
+            {showTextInput && (
+              <View style={styles.inputArea}>
+                <TouchableOpacity style={styles.closeInputBtn} onPress={() => setShowTextInput(false)}>
+                  <Ionicons name="close-circle" size={28} color="#64748B" />
+                </TouchableOpacity>
+                <TextInput 
+                  style={styles.input} 
+                  placeholder="Type a message..." 
+                  placeholderTextColor="#94A3B8" 
+                  value={inputText} 
+                  onChangeText={setInputText} 
+                  autoFocus
+                  multiline
+                />
+                <TouchableOpacity style={styles.sendButton} onPress={() => handleSend()} disabled={loading || !inputText.trim()}>
+                  <Ionicons name="send" size={24} color={loading || !inputText.trim() ? "#CBD5E1" : "#FFFFFF"} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
       </KeyboardAvoidingView>
@@ -156,7 +238,19 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 18, lineHeight: 26 },
   userText: { color: '#FFFFFF' },
   botText: { color: '#1E293B' },
+  loadingContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, marginLeft: 8 },
+  loadingText: { marginLeft: 8, color: '#64748B', fontSize: 14, fontStyle: 'italic' },
+  
+  optionsWrapper: { padding: 16, borderTopWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
+  optionsPrompt: { fontSize: 16, fontWeight: '600', color: '#475569', marginBottom: 12, textAlign: 'center' },
+  optionsList: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10 },
+  presetButton: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+  presetButtonText: { fontSize: 16, color: '#334155', fontWeight: '500' },
+  customOptionButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', borderColor: '#94A3B8' },
+  customOptionButtonText: { fontSize: 16, color: '#1E293B', fontWeight: '600' },
+  
   inputArea: { flexDirection: 'row', padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
-  input: { flex: 1, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 20, fontSize: 18, color: '#1E293B', marginRight: 12 },
-  sendButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center' },
+  closeInputBtn: { marginRight: 8 },
+  input: { flex: 1, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 20, fontSize: 18, color: '#1E293B', marginRight: 12, maxHeight: 100 },
+  sendButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center' },
 });

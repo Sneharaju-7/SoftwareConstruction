@@ -16,7 +16,24 @@ export default function SignUpScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+<<<<<<< HEAD
   const [photoUri, setPhotoUri] = useState('');
+=======
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
+    }
+  };
+>>>>>>> 9a9460bb2dc20ae3f4165766183cbdefcded6dc8
   
   // App State
   const [errorMessage, setErrorMessage] = useState('');
@@ -38,8 +55,8 @@ export default function SignUpScreen() {
   };
 
   const handleSendOTP = () => {
-    if (!name || !phone) {
-      setErrorMessage('Please enter your name and phone number.');
+    if (!name || !phone || !profileImage) {
+      setErrorMessage('Please enter your name, phone, and upload a profile picture.');
       return;
     }
     setErrorMessage('');
@@ -105,6 +122,7 @@ export default function SignUpScreen() {
 
               {/* Photo Upload Placeholder */}
               <TouchableOpacity style={styles.photoUploadContainer} onPress={pickImage}>
+<<<<<<< HEAD
                 {photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.avatarImage} />
                 ) : (
@@ -115,6 +133,16 @@ export default function SignUpScreen() {
                     <Text style={styles.photoUploadText}>Tap to add photo</Text>
                   </>
                 )}
+=======
+                <View style={[styles.photoUploadCircle, profileImage ? styles.photoUploadCircleWithImage : null]}>
+                  {profileImage ? (
+                    <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                  ) : (
+                    <Ionicons name="camera" size={48} color="#94A3B8" />
+                  )}
+                </View>
+                <Text style={styles.photoUploadText}>{profileImage ? 'Change photo' : 'Tap to add photo'}</Text>
+>>>>>>> 9a9460bb2dc20ae3f4165766183cbdefcded6dc8
               </TouchableOpacity>
 
               {/* Input Fields */}
@@ -234,6 +262,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E2E8F0',
     borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  photoUploadCircleWithImage: {
+    borderStyle: 'solid',
+    borderColor: '#1E293B',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarImage: {
     width: 120,

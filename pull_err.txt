@@ -1,0 +1,9 @@
+From https://github.com/Sneharaju-7/SoftwareConstruction
+ * branch            main       -> FETCH_HEAD
+error: The following untracked working tree files would be overwritten by merge:
+	.expo/README.md
+	.expo/devices.json
+	.gitignore
+	tsconfig.json
+Please move or remove them before you merge.
+Aborting
