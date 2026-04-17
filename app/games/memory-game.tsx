@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const EMOJIS = ['🐶', '🍎', '🚗', '🌻', '🎸', '⚽', '🚀', '⭐'];
+const EMOJIS = ['🐶', '🍎', '🚗', '🌻', '🎸', '⚽', '🚀', '⭐', '🐱', '🐢', '🍉', '🍕', '🚲', '✈️', '⛵', '🌈', '🔥', '💧', '☀️', '⛄', '🌲', '🌺', '🍔', '🍟', '⚾', '🏀', '🎓', '📚', '☕', '🎂', '🎉', '🎈', '🎁', '🎧', '📱', '💻'];
 
 interface CardData {
   id: number;
@@ -19,9 +19,13 @@ export default function MemoryGameScreen() {
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
   const [isLocked, setIsLocked] = useState(false);
   const [matches, setMatches] = useState(0);
+  const [moves, setMoves] = useState(0);
 
   const initializeGame = () => {
-    const shuffledCards = [...EMOJIS, ...EMOJIS]
+    // 1. Shuffle master list and pick exactly 8
+    const shuffledPool = [...EMOJIS].sort(() => Math.random() - 0.5).slice(0, 8);
+    // 2. Duplicate and shuffle them for the board
+    const shuffledCards = [...shuffledPool, ...shuffledPool]
       .sort(() => Math.random() - 0.5)
       .map((emoji, index) => ({
         id: index,
@@ -32,6 +36,7 @@ export default function MemoryGameScreen() {
     setCards(shuffledCards);
     setFlippedIndices([]);
     setMatches(0);
+    setMoves(0);
     setIsLocked(false);
   };
 
@@ -51,6 +56,7 @@ export default function MemoryGameScreen() {
 
     if (newFlippedIndices.length === 2) {
       setIsLocked(true);
+      setMoves((prev) => prev + 1);
       const [firstIndex, secondIndex] = newFlippedIndices;
 
       if (newCards[firstIndex].emoji === newCards[secondIndex].emoji) {
@@ -80,6 +86,9 @@ export default function MemoryGameScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={28} color="#1E293B" />
           </TouchableOpacity>
+          <View style={styles.statsContainer}>
+            <Text style={styles.statsText}>Moves: {moves}</Text>
+          </View>
         </View>
 
         <Text style={styles.heroTitle}>Memory Game</Text>
@@ -89,6 +98,7 @@ export default function MemoryGameScreen() {
           {matches === 8 && (
             <View style={styles.winContainer}>
               <Text style={styles.winText}>🎉 You Won! 🎉</Text>
+              <Text style={styles.winMoves}>Completed in {moves} moves!</Text>
               <TouchableOpacity style={styles.restartButton} onPress={initializeGame}>
                 <Text style={styles.restartButtonText}>Play Again</Text>
               </TouchableOpacity>
@@ -121,8 +131,10 @@ export default function MemoryGameScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   container: { padding: 24, maxWidth: 600, width: '100%', alignSelf: 'center', paddingBottom: 60 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   backButton: { padding: 8 },
+  statsContainer: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#F1F5F9', borderRadius: 16 },
+  statsText: { fontSize: 18, fontWeight: '700', color: '#475569' },
   heroTitle: { fontSize: 40, fontWeight: '900', color: '#1E293B', marginBottom: 8 },
   heroSubheadline: { fontSize: 20, color: '#475569', marginBottom: 30 },
   gameBoard: {
@@ -143,6 +155,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
     color: '#1D4ED8',
+    marginBottom: 8,
+  },
+  winMoves: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1E3A8A',
     marginBottom: 16,
   },
   restartButton: {
