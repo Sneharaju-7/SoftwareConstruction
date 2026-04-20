@@ -1,25 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, ScrollView, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { saveUserProfile } from '../utils/storage';
+import { signupBackendUser } from '../utils/backendApi';
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  
-  // Step 1 indicates details form, Step 2 indicates OTP verification
   const [step, setStep] = useState(1);
-  
-  // Form State
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
@@ -30,26 +29,19 @@ export default function SignUpScreen() {
       setProfileImage(result.assets[0].uri);
     }
   };
-  
-  // App State
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const isWeb = Platform.OS === 'web';
 
   const handleSendOTP = () => {
-    if (!name || !phone || !profileImage) {
-      setErrorMessage('Please enter your name, phone, and upload a profile picture.');
+    if (!username || !phone || !profileImage) {
+      setErrorMessage('Please enter your username, phone, and upload a profile picture.');
       return;
     }
+
     setErrorMessage('');
     setIsLoading(true);
-    
-    // Mock API call to send OTP
+
     setTimeout(() => {
       setIsLoading(false);
       setStep(2);
-      // Simulating receiving an SMS OTP of '1234'
     }, 1000);
   };
 
@@ -58,20 +50,37 @@ export default function SignUpScreen() {
       setErrorMessage('Please enter the OTP.');
       return;
     }
-    
+
     setErrorMessage('');
     setIsLoading(true);
-    
-    // Mock API verification
-    setTimeout(() => {
-      setIsLoading(false);
-      if (otp === '1234') {
-        // Success
-        router.push('/(tabs)');
-      } else {
-        // Failure
+
+    setTimeout(async () => {
+      if (otp !== '1234') {
+        setIsLoading(false);
         setErrorMessage('Invalid OTP, try again.');
+        return;
       }
+
+      const backendResult = await signupBackendUser({
+        username,
+        phone,
+        profilePicture: profileImage || '',
+      });
+
+      if (!backendResult.ok) {
+        setIsLoading(false);
+        setErrorMessage(backendResult.error || 'Could not connect to the backend.');
+        return;
+      }
+
+      await saveUserProfile({
+        name: backendResult.data?.username || username,
+        phone: backendResult.data?.phoneNumber || phone,
+        photoUri: backendResult.data?.profilePicture || profileImage || '',
+      });
+
+      setIsLoading(false);
+      router.push('/(tabs)');
     }, 1000);
   };
 
@@ -80,30 +89,28 @@ export default function SignUpScreen() {
       setStep(1);
       setErrorMessage('');
       setOtp('');
-    } else {
-      router.back();
+      return;
     }
+
+    router.back();
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.contentWrapper}>
-          
-          {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={navigateBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={28} color="#1E293B" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Sign Up</Text>
-            <View style={{ width: 28 }} /> {/* Spacer */}
+            <View style={styles.headerSpacer} />
           </View>
 
           {step === 1 ? (
             <View style={styles.formContainer}>
-              <Text style={styles.infoText}>Let's set up your profile.</Text>
+              <Text style={styles.infoText}>Let&apos;s set up your profile.</Text>
 
-              {/* Photo Upload Placeholder */}
               <TouchableOpacity style={styles.photoUploadContainer} onPress={pickImage}>
                 <View style={[styles.photoUploadCircle, profileImage ? styles.photoUploadCircleWithImage : null]}>
                   {profileImage ? (
@@ -115,15 +122,14 @@ export default function SignUpScreen() {
                 <Text style={styles.photoUploadText}>{profileImage ? 'Change photo' : 'Tap to add photo'}</Text>
               </TouchableOpacity>
 
-              {/* Input Fields */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Your Name</Text>
+                <Text style={styles.inputLabel}>Username</Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="e.g. John Doe"
+                  placeholder="e.g. kritika"
                   placeholderTextColor="#94A3B8"
-                  value={name}
-                  onChangeText={setName}
+                  value={username}
+                  onChangeText={setUsername}
                   autoCorrect={false}
                 />
               </View>
@@ -132,7 +138,7 @@ export default function SignUpScreen() {
                 <Text style={styles.inputLabel}>Phone Number</Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="e.g. 555-123-4567"
+                  placeholder="e.g. 9876543210"
                   placeholderTextColor="#94A3B8"
                   value={phone}
                   onChangeText={setPhone}
@@ -149,7 +155,7 @@ export default function SignUpScreen() {
           ) : (
             <View style={styles.formContainer}>
               <Text style={styles.infoText}>We sent a code to {phone}</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Enter 4-digit code</Text>
                 <TextInput
@@ -168,11 +174,10 @@ export default function SignUpScreen() {
               <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyOTP} disabled={isLoading}>
                 <Text style={styles.primaryButtonText}>{isLoading ? 'Verifying...' : 'Verify OTP'}</Text>
               </TouchableOpacity>
-              
-              <Text style={styles.hintText}>(Hint: Use '1234')</Text>
+
+              <Text style={styles.hintText}>(Hint: Use &apos;1234&apos;)</Text>
             </View>
           )}
-
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -207,6 +212,9 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#1E293B',
+  },
+  headerSpacer: {
+    width: 28,
   },
   formContainer: {
     width: '100%',

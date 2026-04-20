@@ -4,16 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { getContacts, Contact } from '../utils/storage';
+import { getUserProfile } from '../utils/storage';
+import { BackendContact, fetchBackendContacts } from '../utils/backendApi';
 
 export default function SOSScreen() {
   const router = useRouter();
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<BackendContact[]>([]);
   const [locationStatus, setLocationStatus] = useState('Idle');
   const [isAlerting, setIsAlerting] = useState(false);
 
   useEffect(() => {
-    getContacts().then(setContacts);
+    getUserProfile().then(async (profile) => {
+      if (!profile?.phone) return;
+      const contactsResult = await fetchBackendContacts(profile.phone);
+      if (contactsResult.ok && contactsResult.data) {
+        setContacts(contactsResult.data);
+      }
+    });
   }, []);
 
   const handleOpenMaps = () => {

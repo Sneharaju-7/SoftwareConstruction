@@ -3,15 +3,22 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getContacts, Contact } from '../utils/storage';
+import { getUserProfile } from '../utils/storage';
+import { BackendContact, fetchBackendContacts } from '../utils/backendApi';
 
 export default function FeelingLowScreen() {
   const router = useRouter();
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<BackendContact[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    getContacts().then(setContacts);
+    getUserProfile().then(async (profile) => {
+      if (!profile?.phone) return;
+      const contactsResult = await fetchBackendContacts(profile.phone);
+      if (contactsResult.ok && contactsResult.data) {
+        setContacts(contactsResult.data);
+      }
+    });
   }, []);
 
   const handleCall = (phone: string) => {
