@@ -1,61 +1,67 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { saveUserProfile } from '../utils/storage';
+import { loginBackendUser } from '../utils/backendApi';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!name || !phone) {
-      setErrorMessage('Please enter both your name and phone number.');
+  const handleLogin = async () => {
+    if (!username || !phone) {
+      setErrorMessage('Please enter both your username and phone number.');
       return;
     }
+
     setErrorMessage('');
     setIsLoading(true);
-    
-    // Mock login verification
-    setTimeout(() => {
-      setIsLoading(false);
-      router.push('/(tabs)');
-    }, 800);
-  };
 
-  const navigateBack = () => {
-    router.back();
+    const backendResult = await loginBackendUser({ username, phone });
+    if (!backendResult.ok) {
+      setIsLoading(false);
+      setErrorMessage(backendResult.error || 'Login failed.');
+      return;
+    }
+
+    await saveUserProfile({
+      name: backendResult.data?.username || username,
+      phone: backendResult.data?.phoneNumber || phone,
+      photoUri: backendResult.data?.profilePicture || '',
+    });
+
+    setIsLoading(false);
+    router.push('/(tabs)');
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.contentWrapper}>
-          
           <View style={styles.header}>
-            <TouchableOpacity onPress={navigateBack} style={styles.backButton}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={28} color="#1E293B" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Login</Text>
-            <View style={{ width: 28 }} />
+            <View style={styles.headerSpacer} />
           </View>
 
           <View style={styles.formContainer}>
             <Text style={styles.infoText}>Welcome back! Please enter your details.</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Your Name</Text>
+              <Text style={styles.inputLabel}>Username</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. John Doe"
+                placeholder="e.g. kritika"
                 placeholderTextColor="#94A3B8"
-                value={name}
-                onChangeText={setName}
+                value={username}
+                onChangeText={setUsername}
                 autoCorrect={false}
               />
             </View>
@@ -64,7 +70,7 @@ export default function LoginScreen() {
               <Text style={styles.inputLabel}>Phone Number</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. 555-123-4567"
+                placeholder="e.g. 9876543210"
                 placeholderTextColor="#94A3B8"
                 value={phone}
                 onChangeText={setPhone}
@@ -78,7 +84,6 @@ export default function LoginScreen() {
               <Text style={styles.primaryButtonText}>{isLoading ? 'Logging in...' : 'Login'}</Text>
             </TouchableOpacity>
           </View>
-
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -113,6 +118,9 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#1E293B',
+  },
+  headerSpacer: {
+    width: 28,
   },
   formContainer: {
     width: '100%',

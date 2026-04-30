@@ -3,23 +3,44 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getContacts, saveContacts, Contact } from '../utils/storage';
+import { getUserProfile } from '../utils/storage';
+import {
+  BackendContact,
+  createBackendContact,
+  deleteBackendContact,
+  fetchBackendContacts,
+} from '../utils/backendApi';
 
 export default function ContactsScreen() {
   const router = useRouter();
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<BackendContact[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [relation, setRelation] = useState('');
+  const [userPhoneNumber, setUserPhoneNumber] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getContacts().then(setContacts);
+    getUserProfile().then(async (profile) => {
+      if (!profile?.phone) return;
+
+      setUserPhoneNumber(profile.phone);
+      const contactsResult = await fetchBackendContacts(profile.phone);
+      if (contactsResult.ok && contactsResult.data) {
+        setContacts(contactsResult.data);
+      } else if (contactsResult.error) {
+        setError(contactsResult.error);
+      }
+    });
   }, []);
 
   const handleAdd = async () => {
     if (!name || !phone || !relation) {
       setError('Please fill in Name, Phone, and Relation.');
+      return;
+    }
+    if (!userPhoneNumber) {
+      setError('Please log in first so we know which user owns these contacts.');
       return;
     }
     if (contacts.length >= 5) {
@@ -28,10 +49,18 @@ export default function ContactsScreen() {
     }
     setError('');
     
-    const newContact: Contact = { id: Date.now().toString(), name, phone, relation };
-    const updated = [...contacts, newContact];
-    setContacts(updated);
-    await saveContacts(updated);
+    const createResult = await createBackendContact({
+      userPhoneNumber,
+      name,
+      phone,
+      relation,
+    });
+    if (!createResult.ok || !createResult.data) {
+      setError(createResult.error || 'Could not save the contact.');
+      return;
+    }
+
+    setContacts((currentContacts) => [...currentContacts, createResult.data as BackendContact]);
     
     // Reset form
     setName('');
@@ -40,9 +69,15 @@ export default function ContactsScreen() {
   };
 
   const handleDelete = async (id: string) => {
-    const updated = contacts.filter(c => c.id !== id);
-    setContacts(updated);
-    await saveContacts(updated);
+    if (!userPhoneNumber) return;
+
+    const deleteResult = await deleteBackendContact(id, userPhoneNumber);
+    if (!deleteResult.ok) {
+      setError(deleteResult.error || 'Could not delete the contact.');
+      return;
+    }
+
+    setContacts((currentContacts) => currentContacts.filter((contact) => contact.id !== id));
   };
 
   return (

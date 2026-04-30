@@ -47,52 +47,71 @@ export const scheduleRealSMS = async (phone: string, title: string, timeStr: str
   const timeTrig = getDailyTrigger(timeStr);
 
   try {
-    if (timeTrig) {
-      // 3. Schedule the Native Daily OS Notification (Background Proof)
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🔔 DAILY REMINDER: ${title}`,
-          body: `It's time for your scheduled task! (SMS sent to ${phone})`,
-          sound: true, 
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: timeTrig.hour,
-          minute: timeTrig.minute,
-          repeats: true,
-        },
-      });
+    if (Platform.OS !== 'web') {
+      if (timeTrig) {
+        // 3. Schedule the Native Daily OS Notification (Background Proof)
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `🔔 DAILY REMINDER: ${title}`,
+            body: `It's time for your scheduled task! (SMS sent to ${phone})`,
+            sound: true, 
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+            hour: timeTrig.hour,
+            minute: timeTrig.minute,
+            repeats: true,
+          },
+        });
 
-      console.log(`[Native Notification] Scheduled securely for ${timeTrig.hour}:${timeTrig.minute} repeating daily!`);
-      alert(`✅ Success! An alarm is now natively scheduled on your device for ${timeStr} every day!`);
+        console.log(`[Native Notification] Scheduled securely for ${timeTrig.hour}:${timeTrig.minute} repeating daily!`);
+        alert(`✅ Success! An alarm is now natively scheduled on your device for ${timeStr} every day!`);
+      } else {
+        // If the time format is unreadable, we fire it 10 seconds from now as a demo fallback
+        await scheduleDemoNotification(title, phone);
+      }
     } else {
-      // If the time format is unreadable, we fire it 10 seconds from now as a demo fallback
-      await scheduleDemoNotification(title, phone);
+      console.log('Push notifications are not supported on the web. SMS will still be sent.');
+      alert(timeTrig ? `✅ Success! SMS reminder is configured for ${timeStr}.` : `⚠️ Time format wasn't recognized, but SMS will be sent now as a demo.`);
     }
   } catch(error) {
     console.error('Notification Error:', error);
-    await scheduleDemoNotification(title, phone);
+    if (Platform.OS !== 'web') {
+      await scheduleDemoNotification(title, phone);
+    }
   }
 
-  // 4. Send the actual SMS immediately (if they provided a number) using the free webhook, 
-  // since background web fetch falls asleep. The native push notification above is the primary alert!
+  // 4. Send the actual SMS immediately (if they provided a number) using your local Twilio backend
+  // The free Textbelt API has a strict limit of 1 SMS per day per IP limit which causes it to silently fail!
   setTimeout(async () => {
     try {
       const formattedPhone = phone.startsWith('+') ? phone : `+91${phone.replace(/\D/g, '')}`;
-      await fetch('https://textbelt.com/text', {
+      const response = await fetch('http://127.0.0.1:3000/send-alert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: formattedPhone,
-          message: `Companion App Reminder: It's time for ${title}.`,
-          key: 'textbelt',
+          phoneNumber: formattedPhone,
+          alertMessage: title,
+          alertTime: timeStr
         }),
       });
-    } catch(e) {}
+      const data = await response.json();
+      if (!data.success) {
+        console.error('Twilio Error:', data.error);
+        alert(`⚠️ SMS Failed: ${data.error}`);
+      } else {
+        console.log('✅ SMS successfully sent via Twilio Backend!');
+      }
+    } catch(e) {
+      console.error('Fetch Error:', e);
+      alert('⚠️ SMS could not be sent. Is your alert-backend server running?');
+    }
   }, 2000);
 };
 
 const scheduleDemoNotification = async (title: string, phone: string) => {
+  if (Platform.OS === 'web') return;
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: `🔔 DEMO ALERT: ${title}`,

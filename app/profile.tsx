@@ -5,28 +5,46 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getUserProfile, saveUserProfile } from '../utils/storage';
+import { updateBackendUserProfile } from '../utils/backendApi';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [photoUri, setPhotoUri] = useState('');
+  const [originalPhone, setOriginalPhone] = useState('');
 
   useEffect(() => {
-    getUserProfile().then(profile => {
+    getUserProfile().then((profile) => {
       setName(profile.name || '');
       setPhone(profile.phone || '');
       setPhotoUri(profile.photoUri || '');
+      setOriginalPhone(profile.phone || '');
     });
   }, []);
 
   const handleSave = async () => {
-    await saveUserProfile({ name, phone, photoUri });
+    const backendResult = await updateBackendUserProfile({
+      currentPhoneNumber: originalPhone || phone,
+      username: name,
+      phone,
+      profilePicture: photoUri,
+    });
+    if (!backendResult.ok) {
+      alert(backendResult.error || 'Could not save your profile to MongoDB.');
+      return;
+    }
+
+    await saveUserProfile({
+      name: backendResult.data?.username || name,
+      phone: backendResult.data?.phoneNumber || phone,
+      photoUri: backendResult.data?.profilePicture || photoUri,
+    });
     router.back();
   };
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
@@ -40,16 +58,17 @@ export default function ProfileScreen() {
 
   const takePhoto = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (permissionResult.granted === false) {
-      alert("Camera permissions are required to take a photo!");
+    if (!permissionResult.granted) {
+      alert('Camera permissions are required to take a photo!');
       return;
     }
-    let result = await ImagePicker.launchCameraAsync({
+
+    const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
     });
-    
+
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setPhotoUri(result.assets[0].uri);
     }
@@ -67,33 +86,46 @@ export default function ProfileScreen() {
         <View style={styles.content}>
           <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
             {photoUri ? (
-               <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+              <Image source={{ uri: photoUri }} style={styles.avatarImage} />
             ) : (
-               <Ionicons name="person-circle" size={120} color="#CBD5E1" />
+              <Ionicons name="person-circle" size={120} color="#CBD5E1" />
             )}
           </TouchableOpacity>
-          
+
           <View style={styles.photoActionsRow}>
             <TouchableOpacity style={styles.photoActionButton} onPress={pickImage}>
-              <Ionicons name="images" size={20} color="#1E293B" style={{marginRight: 8}} />
+              <Ionicons name="images" size={20} color="#1E293B" style={styles.photoActionIcon} />
               <Text style={styles.photoActionText}>Gallery</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoActionButton} onPress={takePhoto}>
-              <Ionicons name="camera" size={20} color="#1E293B" style={{marginRight: 8}} />
+              <Ionicons name="camera" size={20} color="#1E293B" style={styles.photoActionIcon} />
               <Text style={styles.photoActionText}>Camera</Text>
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.title}>Edit Profile</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Your Name</Text>
-            <TextInput style={styles.input} placeholder="John Doe" placeholderTextColor="#94A3B8" value={name} onChangeText={setName} />
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="kritika"
+              placeholderTextColor="#94A3B8"
+              value={name}
+              onChangeText={setName}
+            />
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Phone Number</Text>
-            <TextInput style={styles.input} placeholder="555-123-4567" placeholderTextColor="#94A3B8" value={phone} keyboardType="phone-pad" onChangeText={setPhone} />
+            <TextInput
+              style={styles.input}
+              placeholder="9876543210"
+              placeholderTextColor="#94A3B8"
+              value={phone}
+              keyboardType="phone-pad"
+              onChangeText={setPhone}
+            />
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -111,15 +143,47 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'flex-end', marginBottom: 20 },
   backButton: { padding: 8 },
   content: { alignItems: 'center' },
-  avatarContainer: { marginBottom: 12, width: 120, height: 120, borderRadius: 60, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
+  avatarContainer: {
+    marginBottom: 12,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
   avatarImage: { width: 120, height: 120, borderRadius: 60 },
   photoActionsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  photoActionButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 },
+  photoActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  photoActionIcon: { marginRight: 8 },
   photoActionText: { color: '#1E293B', fontWeight: '600' },
   title: { fontSize: 32, fontWeight: '800', color: '#1E293B', marginBottom: 40 },
   inputGroup: { width: '100%', marginBottom: 24 },
   label: { fontSize: 20, color: '#1E293B', fontWeight: '600', marginBottom: 12 },
-  input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 16, padding: 20, fontSize: 20, color: '#1E293B' },
-  saveButton: { backgroundColor: '#1E293B', width: '100%', padding: 20, borderRadius: 30, alignItems: 'center', marginTop: 20 },
+  input: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 16,
+    padding: 20,
+    fontSize: 20,
+    color: '#1E293B',
+  },
+  saveButton: {
+    backgroundColor: '#1E293B',
+    width: '100%',
+    padding: 20,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginTop: 20,
+  },
   saveButtonText: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
 });
